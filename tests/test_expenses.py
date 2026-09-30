@@ -159,3 +159,39 @@ def test_list_expenses_newest_first(client):
 
     dates = [expense["spent_on"] for expense in response.json()]
     assert dates == ["2026-09-20", "2026-09-10", "2026-09-01"]
+
+def create_expenses_on(client, category_id, dates):
+    for spent_on in dates:
+        client.post(
+            "/expenses", json=expense_payload(category_id, spent_on=spent_on)
+        )
+
+
+def test_list_expenses_filtered_by_date_range_is_inclusive(client):
+    category = make_category(client)
+    create_expenses_on(
+        client,
+        category["id"],
+        ["2026-08-31", "2026-09-01", "2026-09-15", "2026-09-30", "2026-10-01"],
+    )
+
+    response = client.get("/expenses?start=2026-09-01&end=2026-09-30")
+
+    dates = [expense["spent_on"] for expense in response.json()]
+    assert dates == ["2026-09-30", "2026-09-15", "2026-09-01"]
+
+
+def test_list_expenses_with_only_start(client):
+    category = make_category(client)
+    create_expenses_on(client, category["id"], ["2026-09-01", "2026-09-20"])
+
+    response = client.get("/expenses?start=2026-09-10")
+
+    dates = [expense["spent_on"] for expense in response.json()]
+    assert dates == ["2026-09-20"]
+
+
+def test_list_expenses_with_invalid_date_returns_422(client):
+    response = client.get("/expenses?start=banana")
+
+    assert response.status_code == 422
