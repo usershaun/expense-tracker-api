@@ -80,6 +80,7 @@ def delete_expense(expense_id: int, db: Session = Depends(get_db)):
 def list_expenses(
     start: date | None = None,
     end: date | None = None,
+    category_id: int | None = None,
     db: Session = Depends(get_db),
 ):
     query = select(Expense)
@@ -87,6 +88,8 @@ def list_expenses(
         query = query.where(Expense.spent_on >= start)
     if end is not None:
         query = query.where(Expense.spent_on <= end)
+    if category_id is not None:
+        query = query.where(Expense.category_id == category_id)
     query = query.order_by(Expense.spent_on.desc(), Expense.id.desc())
 
     return [to_read_model(expense) for expense in db.scalars(query).all()]

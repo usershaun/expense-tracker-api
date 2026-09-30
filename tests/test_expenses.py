@@ -195,3 +195,43 @@ def test_list_expenses_with_invalid_date_returns_422(client):
     response = client.get("/expenses?start=banana")
 
     assert response.status_code == 422
+
+def test_list_expenses_filtered_by_category(client):
+    food = make_category(client, name="Food")
+    transport = make_category(client, name="Transport")
+    client.post("/expenses", json=expense_payload(food["id"]))
+    client.post("/expenses", json=expense_payload(transport["id"]))
+
+    response = client.get(f"/expenses?category_id={transport['id']}")
+
+    assert [e["category_id"] for e in response.json()] == [transport["id"]]
+
+
+def test_list_expenses_combines_category_and_date_filters(client):
+    food = make_category(client, name="Food")
+    transport = make_category(client, name="Transport")
+    client.post(
+        "/expenses", json=expense_payload(food["id"], spent_on="2026-09-05")
+    )
+    client.post(
+        "/expenses", json=expense_payload(food["id"], spent_on="2026-08-05")
+    )
+    client.post(
+        "/expenses", json=expense_payload(transport["id"], spent_on="2026-09-05")
+    )
+
+    response = client.get(
+        f"/expenses?category_id={food['id']}&start=2026-09-01&end=2026-09-30"
+    )
+
+    result = response.json()
+    assert len(result) == 1
+    assert result[0]["category_id"] == food["id"]
+    assert result[0]["spent_on"] == "2026-09-05"
+
+
+def test_list_expenses_with_unknown_category_returns_empty_list(client):
+    response = client.get("/expenses?category_id=999")
+
+    assert response.status_code == 200
+    assert response.json() == []
