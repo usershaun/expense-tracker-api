@@ -235,3 +235,32 @@ def test_list_expenses_with_unknown_category_returns_empty_list(client):
 
     assert response.status_code == 200
     assert response.json() == []
+
+def test_list_expenses_respects_limit_and_offset(client):
+    category = make_category(client)
+    create_expenses_on(
+        client,
+        category["id"],
+        ["2026-09-01", "2026-09-02", "2026-09-03", "2026-09-04", "2026-09-05"],
+    )
+
+    response = client.get("/expenses?limit=2&offset=1")
+
+    dates = [expense["spent_on"] for expense in response.json()]
+    assert dates == ["2026-09-04", "2026-09-03"]
+
+
+def test_list_expenses_offset_past_the_end_returns_empty_list(client):
+    category = make_category(client)
+    create_expenses_on(client, category["id"], ["2026-09-01"])
+
+    response = client.get("/expenses?offset=10")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_expenses_with_invalid_limit_returns_422(client):
+    assert client.get("/expenses?limit=0").status_code == 422
+    assert client.get("/expenses?limit=101").status_code == 422
+    assert client.get("/expenses?offset=-1").status_code == 422

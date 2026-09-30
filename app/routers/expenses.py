@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -81,6 +81,8 @@ def list_expenses(
     start: date | None = None,
     end: date | None = None,
     category_id: int | None = None,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
 ):
     query = select(Expense)
@@ -91,5 +93,6 @@ def list_expenses(
     if category_id is not None:
         query = query.where(Expense.category_id == category_id)
     query = query.order_by(Expense.spent_on.desc(), Expense.id.desc())
+    query = query.limit(limit).offset(offset)
 
     return [to_read_model(expense) for expense in db.scalars(query).all()]
