@@ -111,8 +111,6 @@ python -m pytest
 
 Tests run against an in-memory SQLite database, so they never touch `expenses.db`.
 
-##
-
 ## Design Decisions
 
 - **Money is stored as integer cents.** Floats cannot represent values like 0.1 exactly, so sums drift. With integer cents, SQL's `SUM()` is exact. The API still sends and returns decimals like `"12.50"`; the conversion happens in `to_cents` and `to_read_model` in `app/routers/expenses.py`. The schema allows at most two decimal places, so nothing is rounded away.
