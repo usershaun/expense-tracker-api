@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Category, Expense
-from app.schemas import ExpenseCreate, ExpenseRead
+from app.schemas import ExpenseCreate, ExpenseRead, ExpenseUpdate
 
 router = APIRouter(prefix="/expenses", tags=["expenses"])
 
@@ -46,4 +46,22 @@ def get_expense(expense_id: int, db: Session = Depends(get_db)):
     expense = db.get(Expense, expense_id)
     if expense is None:
         raise HTTPException(status_code=404, detail="Expense not found")
+    return to_read_model(expense)
+
+@router.put("/{expense_id}", response_model=ExpenseRead)
+def update_expense(
+    expense_id: int, data: ExpenseUpdate, db: Session = Depends(get_db)
+):
+    expense = db.get(Expense, expense_id)
+    if expense is None:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    if db.get(Category, data.category_id) is None:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    expense.amount_cents = to_cents(data.amount)
+    expense.description = data.description
+    expense.spent_on = data.spent_on
+    expense.category_id = data.category_id
+    db.commit()
+    db.refresh(expense)
     return to_read_model(expense)

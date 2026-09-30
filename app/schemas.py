@@ -25,6 +25,9 @@ class ExpenseCreate(BaseModel):
     spent_on: date
     category_id: int
 
+class ExpenseUpdate(ExpenseCreate):
+    pass
+
 
 class ExpenseRead(BaseModel):
     id: int

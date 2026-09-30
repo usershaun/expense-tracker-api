@@ -77,3 +77,45 @@ def test_get_missing_expense_returns_404(client):
     response = client.get("/expenses/999")
 
     assert response.status_code == 404
+
+
+def test_update_expense(client):
+    category = make_category(client)
+    other = make_category(client, name="Transport")
+    created = client.post("/expenses", json=expense_payload(category["id"])).json()
+
+    response = client.put(
+        f"/expenses/{created['id']}",
+        json=expense_payload(
+            other["id"], amount="30.00", description="Taxi", spent_on="2026-09-29"
+        ),
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": created["id"],
+        "amount": "30.00",
+        "description": "Taxi",
+        "spent_on": "2026-09-29",
+        "category_id": other["id"],
+    }
+    assert client.get(f"/expenses/{created['id']}").json() == response.json()
+
+
+def test_update_missing_expense_returns_404(client):
+    category = make_category(client)
+
+    response = client.put("/expenses/999", json=expense_payload(category["id"]))
+
+    assert response.status_code == 404
+
+
+def test_update_expense_with_unknown_category_returns_404(client):
+    category = make_category(client)
+    created = client.post("/expenses", json=expense_payload(category["id"])).json()
+
+    response = client.put(
+        f"/expenses/{created['id']}", json=expense_payload(999)
+    )
+
+    assert response.status_code == 404
