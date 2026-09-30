@@ -82,6 +82,8 @@ The database is a SQLite file (`expenses.db`) created on first start. To change 
 
 ## Usage
 
+![Interactive API documentation at /docs](docs/api-docs.png)
+
 Create a category, then an expense in it:
 
 ```
