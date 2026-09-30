@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -20,3 +21,8 @@ def create_category(data: CategoryCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=409, detail="Category already exists")
     db.refresh(category)
     return category
+
+
+@router.get("", response_model=list[CategoryRead])
+def list_categories(db: Session = Depends(get_db)):
+    return db.scalars(select(Category).order_by(Category.name)).all()

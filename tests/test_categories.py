@@ -18,3 +18,20 @@ def test_create_category_with_blank_name_returns_422(client):
     response = client.post("/categories", json={"name": "   "})
 
     assert response.status_code == 422
+
+
+def test_list_categories_empty(client):
+    response = client.get("/categories")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_categories_sorted_by_name(client):
+    client.post("/categories", json={"name": "Transport"})
+    client.post("/categories", json={"name": "Food"})
+
+    response = client.get("/categories")
+
+    names = [category["name"] for category in response.json()]
+    assert names == ["Food", "Transport"]
