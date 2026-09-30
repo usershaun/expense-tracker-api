@@ -135,3 +135,27 @@ def test_delete_missing_expense_returns_404(client):
     response = client.delete("/expenses/999")
 
     assert response.status_code == 404
+
+def test_list_expenses_empty(client):
+    response = client.get("/expenses")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_expenses_newest_first(client):
+    category = make_category(client)
+    client.post(
+        "/expenses", json=expense_payload(category["id"], spent_on="2026-09-01")
+    )
+    client.post(
+        "/expenses", json=expense_payload(category["id"], spent_on="2026-09-20")
+    )
+    client.post(
+        "/expenses", json=expense_payload(category["id"], spent_on="2026-09-10")
+    )
+
+    response = client.get("/expenses")
+
+    dates = [expense["spent_on"] for expense in response.json()]
+    assert dates == ["2026-09-20", "2026-09-10", "2026-09-01"]

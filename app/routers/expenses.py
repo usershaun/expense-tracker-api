@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -73,3 +73,11 @@ def delete_expense(expense_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Expense not found")
     db.delete(expense)
     db.commit()
+
+
+@router.get("", response_model=list[ExpenseRead])
+def list_expenses(db: Session = Depends(get_db)):
+    expenses = db.scalars(
+        select(Expense).order_by(Expense.spent_on.desc(), Expense.id.desc())
+    ).all()
+    return [to_read_model(expense) for expense in expenses]
