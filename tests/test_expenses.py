@@ -119,3 +119,19 @@ def test_update_expense_with_unknown_category_returns_404(client):
     )
 
     assert response.status_code == 404
+
+
+def test_delete_expense(client):
+    category = make_category(client)
+    created = client.post("/expenses", json=expense_payload(category["id"])).json()
+
+    response = client.delete(f"/expenses/{created['id']}")
+
+    assert response.status_code == 204
+    assert client.get(f"/expenses/{created['id']}").status_code == 404
+
+
+def test_delete_missing_expense_returns_404(client):
+    response = client.delete("/expenses/999")
+
+    assert response.status_code == 404
