@@ -264,3 +264,28 @@ def test_list_expenses_with_invalid_limit_returns_422(client):
     assert client.get("/expenses?limit=0").status_code == 422
     assert client.get("/expenses?limit=101").status_code == 422
     assert client.get("/expenses?offset=-1").status_code == 422
+
+def test_create_expense_with_largest_allowed_amount(client):
+    category = make_category(client)
+
+    response = client.post(
+        "/expenses", json=expense_payload(category["id"], amount="99999999.99")
+    )
+
+    assert response.status_code == 201
+    assert response.json()["amount"] == "99999999.99"
+
+
+def test_create_expense_with_too_many_digits_returns_422(client):
+    category = make_category(client)
+
+    response = client.post(
+        "/expenses", json=expense_payload(category["id"], amount="100000000.00")
+    )
+
+    assert response.status_code == 422
+
+def test_get_expense_with_non_numeric_id_returns_422(client):
+    response = client.get("/expenses/abc")
+
+    assert response.status_code == 422
