@@ -35,3 +35,17 @@ class ExpenseRead(BaseModel):
     description: str
     spent_on: date
     category_id: int
+
+class CategoryTotal(BaseModel):
+    category_id: int
+    category_name: str
+    total: Decimal
+    count: int
+
+
+class MonthlySummary(BaseModel):
+    year: int
+    month: int
+    total: Decimal
+    count: int
+    by_category: list[CategoryTotal]
