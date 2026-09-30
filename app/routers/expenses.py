@@ -40,3 +40,10 @@ def create_expense(data: ExpenseCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(expense)
     return to_read_model(expense)
+
+@router.get("/{expense_id}", response_model=ExpenseRead)
+def get_expense(expense_id: int, db: Session = Depends(get_db)):
+    expense = db.get(Expense, expense_id)
+    if expense is None:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    return to_read_model(expense)

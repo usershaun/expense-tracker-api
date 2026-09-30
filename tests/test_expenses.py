@@ -62,3 +62,18 @@ def test_delete_category_in_use_returns_409(client):
 
     assert response.status_code == 409
     assert response.json() == {"detail": "Category is used by existing expenses"}
+
+def test_get_expense(client):
+    category = make_category(client)
+    created = client.post("/expenses", json=expense_payload(category["id"])).json()
+
+    response = client.get(f"/expenses/{created['id']}")
+
+    assert response.status_code == 200
+    assert response.json() == created
+
+
+def test_get_missing_expense_returns_404(client):
+    response = client.get("/expenses/999")
+
+    assert response.status_code == 404
