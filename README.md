@@ -24,9 +24,34 @@ Spreadsheets work for tracking spending but are hard to query, validate and auto
 - Pydantic and pydantic-settings
 - pytest for tests, Ruff for linting
 
+## Architecture
+
+A request goes through three layers:
+
+1. **Pydantic schemas** validate the request body and query parameters. Invalid input is rejected with a 422 before any of our code runs.
+2. **Routers** (one per resource) hold the endpoint logic and talk to the database through a SQLAlchemy session.
+3. **SQLite** stores the data. The schema is created on startup from the SQLAlchemy models.
+
+Routers use the session through FastAPI's `Depends(get_db)`, so each request gets its own session, closed after the response. Tests replace `get_db` with one that points at an in-memory database.
+
+## Project Structure
+
+```
+app/
+  main.py          app creation, startup, router registration
+  config.py        settings (database URL) read from environment / .env
+  database.py      engine, session dependency, SQLite foreign key setting
+  models.py        SQLAlchemy tables: Category, Expense
+  schemas.py       Pydantic request and response models
+  routers/         categories.py, expenses.py, summaries.py
+tests/
+  conftest.py      test client backed by an in-memory database
+  test_*.py        tests for each router
+```
+
 ## Setup
 
-Requires Python 3.10 or newer.
+Developed and tested with Python 3.14.
 
 ```bash
 git clone <repository-url>
@@ -70,29 +95,20 @@ POST /expenses
 Query expenses and summaries:
 
 ```
-GET /expenses?start=2026-09-01&end=2026-09-30&category_id=1&limit=20&o
-
-## Architecture
-
-A request goes through three layers:
-
-1. **Pydantic schemas** validate the request body and query parameters. Invalid input is rejected with a 422 before any of our code runs.
-2. **Routers** (one per resource) hold the endpoint logic and talk to the database through a SQLAlchemy session.
-3. **SQLite** stores the data. The schema is created on startup from the SQLAlchemy models.
-
-Routers use the session through FastAPI's `Depends(get_db)`, so each request gets its own session, closed after the response. Tests replace `get_db` with one that points at an in-memory database.
-
-## Project Structure
-
+GET /expenses?start=2026-09-01&end=2026-09-30&category_id=1&limit=20&offset=0
+GET /summaries/monthly?year=2026&month=9
+GET /summaries/by-category?start=2026-01-01&end=2026-12-31
 ```
-app/
-  main.py          app creation, startup, router registration
-  config.py        settings (database URL) read from environment / .env
-  database.py      engine, session dependency, SQLite foreign key setting
-  models.py        SQLAlchemy tables: Category, Expense
-  schemas.py       Pydantic request and response models
-  routers/         categories.py, expenses.py, summaries.py
-tests/
-  conftest.py      test client backed by an in-memory database
-  test_*.py        tests for each router
+
+Amounts are sent and returned as decimal strings such as `"12.50"`.
+
+## Testing
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
 ```
+
+Tests run against an in-memory SQLite database, so they never touch `expenses.db`.
+
+##
