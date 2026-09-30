@@ -35,3 +35,18 @@ def test_list_categories_sorted_by_name(client):
 
     names = [category["name"] for category in response.json()]
     assert names == ["Food", "Transport"]
+
+
+def test_delete_category(client):
+    created = client.post("/categories", json={"name": "Food"}).json()
+
+    response = client.delete(f"/categories/{created['id']}")
+
+    assert response.status_code == 204
+    assert client.get("/categories").json() == []
+
+
+def test_delete_missing_category_returns_404(client):
+    response = client.delete("/categories/999")
+
+    assert response.status_code == 404
