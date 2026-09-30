@@ -60,3 +60,40 @@ def test_monthly_summary_includes_first_and_last_day_only(client):
 def test_monthly_summary_with_invalid_month_returns_422(client):
     assert client.get("/summaries/monthly?year=2026&month=13").status_code == 422
     assert client.get("/summaries/monthly?year=2026&month=0").status_code == 422
+
+def test_category_summary_over_all_time(client):
+    food = make_category(client, "Food")
+    transport = make_category(client, "Transport")
+    add_expense(client, food["id"], "10.00", "2026-08-05")
+    add_expense(client, food["id"], "20.00", "2026-09-05")
+    add_expense(client, transport["id"], "50.00", "2026-09-06")
+
+    response = client.get("/summaries/by-category")
+
+    body = response.json()
+    assert body["start"] is None
+    assert body["end"] is None
+    assert body["total"] == "80.00"
+    assert [c["category_name"] for c in body["by_category"]] == ["Transport", "Food"]
+
+
+def test_category_summary_respects_date_range(client):
+    food = make_category(client, "Food")
+    add_expense(client, food["id"], "10.00", "2026-08-05")
+    add_expense(client, food["id"], "20.00", "2026-09-05")
+
+    response = client.get("/summaries/by-category?start=2026-09-01&end=2026-09-30")
+
+    body = response.json()
+    assert body["total"] == "20.00"
+    assert body["count"] == 1
+
+
+def test_category_summary_with_no_expenses(client):
+    make_category(client, "Food")
+
+    response = client.get("/summaries/by-category")
+
+    assert response.status_code == 200
+    assert response.json()["by_category"] == []
+    assert response.json()["total"] == "0.00"

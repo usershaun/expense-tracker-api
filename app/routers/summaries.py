@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Category, Expense
-from app.schemas import CategoryTotal, MonthlySummary
+from app.schemas import CategorySummary, CategoryTotal, MonthlySummary
 
 router = APIRouter(prefix="/summaries", tags=["summaries"])
 
@@ -58,6 +58,21 @@ def monthly_summary(
     return MonthlySummary(
         year=year,
         month=month,
+        total=sum((c.total for c in by_category), Decimal("0.00")),
+        count=sum(c.count for c in by_category),
+        by_category=by_category,
+    )
+
+@router.get("/by-category", response_model=CategorySummary)
+def category_summary(
+    start: date | None = None,
+    end: date | None = None,
+    db: Session = Depends(get_db),
+):
+    by_category = category_totals(db, start, end)
+    return CategorySummary(
+        start=start,
+        end=end,
         total=sum((c.total for c in by_category), Decimal("0.00")),
         count=sum(c.count for c in by_category),
         by_category=by_category,

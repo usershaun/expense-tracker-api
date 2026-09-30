@@ -49,3 +49,10 @@ class MonthlySummary(BaseModel):
     total: Decimal
     count: int
     by_category: list[CategoryTotal]
+
+class CategorySummary(BaseModel):
+    start: date | None
+    end: date | None
+    total: Decimal
+    count: int
+    by_category: list[CategoryTotal]
