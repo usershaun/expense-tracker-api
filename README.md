@@ -54,7 +54,7 @@ tests/
 Developed and tested with Python 3.14.
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/usershaun/expense-tracker-api.git
 cd expense-tracker-api
 python -m venv .venv
 ```
