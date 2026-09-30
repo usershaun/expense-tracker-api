@@ -112,3 +112,33 @@ python -m pytest
 Tests run against an in-memory SQLite database, so they never touch `expenses.db`.
 
 ##
+
+## Design Decisions
+
+- **Money is stored as integer cents.** Floats cannot represent values like 0.1 exactly, so sums drift. With integer cents, SQL's `SUM()` is exact. The API still sends and returns decimals like `"12.50"`; the conversion happens in `to_cents` and `to_read_model` in `app/routers/expenses.py`. The schema allows at most two decimal places, so nothing is rounded away.
+- **Categories are a table, not a free-text field.** This prevents typos like "Food" and "Fod" and makes a category a single thing to manage. The cost is a rule: a category that still has expenses cannot be deleted (409).
+- **The foreign key is enforced by the database.** SQLite ignores foreign keys unless `PRAGMA foreign_keys=ON` is set on each connection, so `database.py` sets it. Without it, a category could be deleted while expenses still pointed at it.
+- **No service layer.** Each endpoint is short enough to live in its router. The summary query is the most complex piece and is a single function in `summaries.py`.
+- **Limit/offset pagination** maps directly onto SQL `LIMIT` and `OFFSET` and is easy to reason about.
+
+## Limitations
+
+- Single user only: there is no authentication.
+- One currency, with no conversion.
+- Category names are case-sensitive, so "Food" and "food" are different categories.
+- Categories cannot be renamed, only created and deleted.
+- The database schema is created with `create_all`, which cannot change an existing table. There are no migrations, so changing a model means deleting `expenses.db`.
+- With limit/offset pagination, a client paging through the list can see an item twice or miss one if expenses are added between requests.
+- Error responses are not uniform in shape: 404 and 409 return `detail` as a string, while 422 returns it as a list.
+- Tested with Python 3.14 on Windows only.
+
+## Future Improvements
+
+- Rename endpoint for categories, and case-insensitive category names
+- Database migrations with Alembic
+- CSV export of expenses
+- Authentication, if it ever needs more than one user
+
+## License
+
+MIT. See [LICENSE](LICENSE).
